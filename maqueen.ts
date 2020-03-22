@@ -1,12 +1,12 @@
-/** 
+/**
  * @file pxt-maqueen/maqueen.ts
  * @brief DFRobot's maqueen makecode library.
  * @n [Get the module here](https://www.dfrobot.com.cn/goods-1802.html)
  * @n This is a MakeCode graphical programming education robot.
- * 
+ *
  * @copyright    [DFRobot](http://www.dfrobot.com), 2016
  * @copyright    MIT Lesser General Public License
- * 
+ *
  * @author [email](jie.tang@dfrobot.com)
  * @version  V1.0.2
  * @date  2019-10-08
@@ -20,13 +20,6 @@ let alreadyInit = 0
 let IrPressEvent = 0
 const MOTER_ADDRESSS = 0x10
 
-enum PingUnit {
-    //% block="cm"
-    Centimeters,
-    //% block="μm"
-    MicroSeconds
-}
-
 //% weight=10 color=#008B00 icon="\uf136" block="Maqueen"
 namespace maqueen {
 
@@ -35,13 +28,20 @@ namespace maqueen {
         public myparam: number;
     }
 
-    export enum Motors {
-        //% blockId="left motor" block="left"
-        M1 = 0,
-        //% blockId="right motor" block="right"
-        M2 = 1,
-        //% blockId="all motor" block="all"
-        All = 2
+	export enum Side {
+		//% blockId="Left" block="left"
+		Left = 1,
+		//% blockId="Right" block="right"
+		Right = 2,
+		//% blockId="Both" block="both"
+		Both = 3
+	}
+
+    export enum State {
+        //% blockId="On" block="ON"
+        On = 1,
+        //% blockId="Off" block="OFF"
+        Off = 0
     }
 
     export enum Servos {
@@ -51,32 +51,18 @@ namespace maqueen {
         S2 = 1
     }
 
+	export enum PingUnit {
+		//% block="cm"
+		Centimeters,
+		//% block="μm"
+		MicroSeconds
+	}
+
     export enum Dir {
         //% blockId="CW" block="Forward"
         CW = 0x0,
         //% blockId="CCW" block="Backward"
         CCW = 0x1
-    }
-
-    export enum Patrol {
-        //% blockId="patrolLeft" block="left"
-        PatrolLeft = 13,
-        //% blockId="patrolRight" block="right"
-        PatrolRight = 14
-    }
-
-    export enum LED {
-        //% blockId="LEDLeft" block="left"
-        LEDLeft = 8,
-        //% blockId="LEDRight" block="right"
-        LEDRight = 12
-    }
-
-    export enum LEDswitch {
-        //% blockId="turnOn" block="ON"
-        turnOn = 0x01,
-        //% blockId="turnOff" block="OFF"
-        turnOff = 0x00
     }
 
     //% advanced=true shim=maqueenIR::initIR
@@ -175,8 +161,10 @@ namespace maqueen {
             return 0;
         }
         switch (unit) {
-            case PingUnit.Centimeters: return Math.round(x);
-            default: return Math.idiv(d, 2.54);
+            case PingUnit.Centimeters:
+				return Math.round(x);
+            default:
+				return Math.idiv(d, 2.54);
         }
 
     }
@@ -190,21 +178,21 @@ namespace maqueen {
     //% speed.min=0 speed.max=255
     //% index.fieldEditor="gridpicker" index.fieldOptions.columns=2
     //% direction.fieldEditor="gridpicker" direction.fieldOptions.columns=2
-    export function motorRun(index: Motors, direction: Dir, speed: number): void {
+    export function motorRun(side: Side, direction: Dir, speed: number): void {
         let buf = pins.createBuffer(3);
-        if (index == 0) {
+        if (side == Side.Left) {
             buf[0] = 0x00;
             buf[1] = direction;
             buf[2] = speed;
             pins.i2cWriteBuffer(0x10, buf);
         }
-        if (index == 1) {
+        else if (side == Side.Right) {
             buf[0] = 0x02;
             buf[1] = direction;
             buf[2] = speed;
             pins.i2cWriteBuffer(0x10, buf);
         }
-        if (index == 2) {
+        else if (side == Side.Both) {
             buf[0] = 0x00;
             buf[1] = direction;
             buf[2] = speed;
@@ -219,23 +207,23 @@ namespace maqueen {
      */
     //% weight=20
     //% blockId=motor_motorStop block="motor |%motors stop"
-    //% motors.fieldEditor="gridpicker" motors.fieldOptions.columns=2 
-    export function motorStop(motors: Motors): void {
+    //% motors.fieldEditor="gridpicker" motors.fieldOptions.columns=2
+    export function motorStop(side: Side): void {
         let buf = pins.createBuffer(3);
-        if (motors == 0) {
+        if (side == Side.Left) {
             buf[0] = 0x00;
             buf[1] = 0;
             buf[2] = 0;
             pins.i2cWriteBuffer(0x10, buf);
         }
-        if (motors == 1) {
+        else if (side == Side.Right) {
             buf[0] = 0x02;
             buf[1] = 0;
             buf[2] = 0;
             pins.i2cWriteBuffer(0x10, buf);
         }
 
-        if (motors == 2) {
+        else if (side == Side.Both) {
             buf[0] = 0x00;
             buf[1] = 0;
             buf[2] = 0;
@@ -252,11 +240,11 @@ namespace maqueen {
 
     //% weight=20
     //% blockId=read_Patrol block="read |%patrol line tracking sensor"
-    //% patrol.fieldEditor="gridpicker" patrol.fieldOptions.columns=2 
-    export function readPatrol(patrol: Patrol): number {
-        if (patrol == Patrol.PatrolLeft) {
+    //% patrol.fieldEditor="gridpicker" patrol.fieldOptions.columns=2
+    export function readPatrol(side: Side): number {
+        if (side == Side.Left) {
             return pins.digitalReadPin(DigitalPin.P13)
-        } else if (patrol == Patrol.PatrolRight) {
+        } else if (side == Side.Right) {
             return pins.digitalReadPin(DigitalPin.P14)
         } else {
             return -1
@@ -269,13 +257,16 @@ namespace maqueen {
 
     //% weight=20
     //% blockId=writeLED block="LEDlight |%led turn |%ledswitch"
-    //% led.fieldEditor="gridpicker" led.fieldOptions.columns=2 
+    //% led.fieldEditor="gridpicker" led.fieldOptions.columns=2
     //% ledswitch.fieldEditor="gridpicker" ledswitch.fieldOptions.columns=2
-    export function writeLED(led: LED,ledswitch: LEDswitch): void {
-        if (led == LED.LEDLeft) {
-            pins.digitalWritePin(DigitalPin.P8, ledswitch)
-        } else if (led == LED.LEDRight) {
-            pins.digitalWritePin(DigitalPin.P12, ledswitch)
+    export function writeLED(side: Side,state: State): void {
+        if (side == Side.Left) {
+            pins.digitalWritePin(DigitalPin.P8, state)
+        } else if (side == Side.Right) {
+            pins.digitalWritePin(DigitalPin.P12, state)
+        } else if (side == Side.Both) {
+            pins.digitalWritePin(DigitalPin.P8, state)
+            pins.digitalWritePin(DigitalPin.P12, state)
         } else {
             return
         }
