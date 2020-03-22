@@ -1,7 +1,7 @@
 {
   "maqueen.IR_read": "Read IR sensor value.",
   "maqueen.IR_read_version": "Read the version number.",
-  "maqueen.Ultrasonic": "Read ultrasonic sensor.",
+  "maqueen.Ultrasonic": "Read ultrasonic sensor.\nsee: https://cdn.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf",
   "maqueen.motorRun": "Set the direction and speed of Maqueen motor.",
   "maqueen.motorStop": "Stop the Maqueen motor.",
   "maqueen.readPatrol": "Read line tracking sensor.",

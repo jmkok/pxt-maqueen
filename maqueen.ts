@@ -54,7 +54,9 @@ namespace maqueen {
 	export enum PingUnit {
 		//% block="cm"
 		Centimeters,
-		//% block="μm"
+		//% block="inch"
+		Inches,
+		//% block="μs"
 		MicroSeconds
 	}
 
@@ -140,31 +142,27 @@ namespace maqueen {
 
     /**
      * Read ultrasonic sensor.
+     * see: https://cdn.sparkfun.com/datasheets/Sensors/Proximity/HCSR04.pdf
+     * We could multiply us with 1.5 for more accurate values...
      */
 
     //% blockId=ultrasonic_sensor block="read ultrasonic sensor |%unit "
     //% weight=95
     export function Ultrasonic(unit: PingUnit, maxCmDistance = 500): number {
-        let d
-        pins.digitalWritePin(DigitalPin.P1, 0);
-        if (pins.digitalReadPin(DigitalPin.P2) == 0) {
-            pins.digitalWritePin(DigitalPin.P1, 1);
-            pins.digitalWritePin(DigitalPin.P1, 0);
-            d = pins.pulseIn(DigitalPin.P2, PulseValue.High, maxCmDistance * 58);
-        } else {
-            pins.digitalWritePin(DigitalPin.P1, 0);
-            pins.digitalWritePin(DigitalPin.P1, 1);
-            d = pins.pulseIn(DigitalPin.P2, PulseValue.Low, maxCmDistance * 58);
-        }
-        let x = d / 39;
-        if (x <= 0 || x > 500) {
-            return 0;
-        }
+		let timeout = maxCmDistance * 58;
+		pins.digitalWritePin(DigitalPin.P1, 1);
+		basic.pause(1); /* todo: wait 10us */
+		pins.digitalWritePin(DigitalPin.P1, 0);
+		let us = pins.pulseIn(DigitalPin.P2, PulseValue.High, timeout);
+        if (us <= 0 || us > timeout)
+			us = timeout;
         switch (unit) {
             case PingUnit.Centimeters:
-				return Math.round(x);
+				return Math.round(us / 58);
+            case PingUnit.Inches:
+				return Math.round(us / 148);
             default:
-				return Math.idiv(d, 2.54);
+				return us;
         }
 
     }
